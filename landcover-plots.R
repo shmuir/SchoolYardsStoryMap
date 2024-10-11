@@ -6,7 +6,7 @@
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Author: Sam Muir
-# Last Updated: 10/09/2024
+# Last Updated: 10/11/2024
 
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -67,16 +67,16 @@ sac_landcover_area <- data.frame(
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 landcover_area <- bind_rows(LA_landcover_area, oakland_landcover_area, sac_landcover_area) %>%
-  mutate(label = paste0(landcover, "\n", round(area_perc, 1),"%")) %>%
+  mutate(label = paste0(landcover, "\n", round(area_perc, 1),"%")) %>% # create nice label for plot
   group_by(city) %>%
   arrange(desc(landcover)) %>%
-  mutate(pos = cumsum(area_perc) - area_perc / 2,
-         label_outside = ifelse(area_perc < threshold, TRUE, FALSE))
+  mutate(pos = cumsum(area_perc) - area_perc / 2, # where the label should be placed in the plot
+         label_outside = ifelse(area_perc < threshold, TRUE, FALSE)) # is percent < threshold, then put label outside of plot
 
 pie <- ggplot(landcover_area, aes(x = "", y = area_perc, fill = landcover)) +
   geom_bar(stat = "identity", width = 1, color = "white") +
   facet_wrap(~city) +
-  coord_polar("y", start = 0) +
+  coord_polar("y", start = 0) + # turn axis into circle - makes it a pie chart
   labs(x = "Landcover", y = "Percentage of Area") +
   theme_void() +
   scale_fill_manual(values = c("#b670b8", "#a8f0b3", "#d6d6d6", "#297549")) +
@@ -86,7 +86,7 @@ pie <- ggplot(landcover_area, aes(x = "", y = area_perc, fill = landcover)) +
             size = 2.5) +
   geom_text_repel(data = subset(landcover_area, label_outside),
                   aes(y = pos, label = label), 
-                  nudge_x = 0.8,             # Push the label outside the chart
+                  nudge_x = 0.8, # push the label outside the chart
                   nudge_y = 0,
                   show.legend = FALSE, 
                   size = 2.5, 
@@ -201,13 +201,12 @@ sac_pie
 # Parking is just the parking lots, non-parking is everything else in the school boundary that is not a parking lot
 
 LA_class_parking <- read_sf("data/LA_classification_parkinglot_polygons/LA_Classification_ParkingLot_Clip.shp") %>%
-  st_drop_geometry() %>%
+  st_drop_geometry() %>% # don't need geometry, it can also cause errors when using summarise()
   janitor::clean_names() %>%
-  mutate(lc_class = case_when(
-    dn == "1" ~ "Trees/Shrubs",
-    dn == "2" ~ "Grass",
-    dn == "3" ~ "Non-Building Impervious",
-    dn == "4" ~ "Buildings")) %>%
+  mutate(lc_class = case_when(dn == "1" ~ "Trees/Shrubs",
+                              dn == "2" ~ "Grass",
+                              dn == "3" ~ "Non-Building Impervious",
+                              dn == "4" ~ "Buildings")) %>%
   group_by(lc_class) %>%
   summarise(area_km2_sum = sum(area_km2)) %>%
   drop_na() %>%
@@ -219,13 +218,12 @@ LA_class_parking <- read_sf("data/LA_classification_parkinglot_polygons/LA_Class
          parking = "Parking Lot")
 
 LA_class_nonparking <- read_sf("data/LA_classification_parkinglot_polygons/LA_Classification_NonParkingLot_Clip.shp") %>%
-  st_drop_geometry() %>%
+  st_drop_geometry() %>% 
   janitor::clean_names() %>%
-  mutate(lc_class = case_when(
-    dn == "1" ~ "Trees/Shrubs",
-    dn == "2" ~ "Grass",
-    dn == "3" ~ "Non-Building Impervious",
-    dn == "4" ~ "Buildings")) %>%
+  mutate(lc_class = case_when(dn == "1" ~ "Trees/Shrubs",
+                              dn == "2" ~ "Grass",
+                              dn == "3" ~ "Non-Building Impervious",
+                              dn == "4" ~ "Buildings")) %>%
   group_by(lc_class) %>%
   rename(area_km2 = area) %>%
   summarise(area_km2_sum = sum(area_km2)) %>%
